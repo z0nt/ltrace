@@ -1,5 +1,6 @@
 DIST_SUBDIRS = \
-	linux-gnu
+	linux-gnu \
+	FreeBSD
 
 SUBDIRS = \
 	$(HOST_OS)

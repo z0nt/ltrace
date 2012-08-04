@@ -12,6 +12,7 @@ AC_CANONICAL_HOST
 
 case "${host_os}" in
     linux-gnu*)	HOST_OS="linux-gnu" ;;
+    freebsd*)	HOST_OS="FreeBSD" ;;
     *)		AC_MSG_ERROR([unkown host-os ${host_os}]) ;;
 esac
 AC_SUBST(HOST_OS)
@@ -277,6 +278,8 @@ AC_CONFIG_FILES([
 	sysdeps/linux-gnu/s390/Makefile
 	sysdeps/linux-gnu/sparc/Makefile
 	sysdeps/linux-gnu/x86_64/Makefile
+	sysdeps/FreeBSD/Makefile
+	sysdeps/FreeBSD/amd64/Makefile
 	testsuite/Makefile
 	testsuite/ltrace.main/Makefile
 	testsuite/ltrace.minor/Makefile
