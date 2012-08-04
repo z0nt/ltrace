@@ -3,6 +3,10 @@
 
 #include "common.h"
 
+#ifdef	__FreeBSD__
+#define	PTRACE_PEEKTEXT	PT_READ_I
+#endif
+
 void
 debug_(int level, const char *file, int line, const char *fmt, ...) {
 	char buf[1024];
@@ -102,7 +106,7 @@ xinfdump(long pid, void *ptr, int len) {
 	addr = ((addr + sizeof(long) - 1) / sizeof(long)) * sizeof(long);
 
 	for (i = 0; i < wrdcnt; ++i) {
-		infwords[i] = ptrace(PTRACE_PEEKTEXT, pid, (void *)addr, NULL);
+		infwords[i] = ptrace(PTRACE_PEEKTEXT, pid, (void *)addr, 0);
 		addr += sizeof(long);
 	}
 
