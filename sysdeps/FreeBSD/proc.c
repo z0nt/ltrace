@@ -525,5 +525,5 @@ task_kill (pid_t pid, int sig)
         ret = syscall (__NR_tkill, pid, sig);
 	return ret;
 #endif
-	return (0);
+	return kill(pid, sig);
 }
