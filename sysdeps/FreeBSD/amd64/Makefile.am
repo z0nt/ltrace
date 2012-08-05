@@ -8,11 +8,7 @@ ___libcpu_la_SOURCES = \
 
 noinst_HEADERS = \
 	arch.h \
-	ptrace.h \
-	signalent.h \
-	signalent1.h \
-	syscallent.h \
-	syscallent1.h
+	ptrace.h
 
 MAINTAINERCLEANFILES = \
 	Makefile.in
