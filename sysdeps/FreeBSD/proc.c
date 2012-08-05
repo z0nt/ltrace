@@ -52,7 +52,7 @@ pid2name(pid_t pid) {
 		if (sysctl(name, 4, pathname, &len, NULL, 0) == 0)
 			return strdup(pathname);
 	}
-	return (NULL);
+	return NULL;
 }
 
 static struct kinfo_proc *
@@ -70,7 +70,7 @@ fill_kinfo(pid_t pid)
 	len = 0;
 	if (sysctl(name, 4, NULL, &len, NULL, 0) == -1) {
 		warn("sysctl: kern.proc.pid: %d", pid);
-		return (NULL);
+		return NULL;
 	}
 
 	kip = malloc(len);
@@ -80,10 +80,10 @@ fill_kinfo(pid_t pid)
 	if (sysctl(name, 4, kip, &len, NULL, 0) == -1) {
 		warn("sysctl: kern.proc.pid: %d", pid);
 		free(kip);
-		return (NULL);
+		return NULL;
 	}
 
-	return (kip);
+	return kip;
 }
 
 pid_t
@@ -98,9 +98,9 @@ process_leader(pid_t pid)
 		free(kip);
 	}
 
-	return (tgid);
+	return tgid;
 #endif
-	return (pid);
+	return pid;
 }
 
 int
@@ -115,7 +115,7 @@ process_stopped(pid_t pid)
 		free(kip);
 	}
 
-	return (is_stopped);
+	return is_stopped;
 }
 
 enum process_status
@@ -148,7 +148,7 @@ process_status(pid_t pid)
 		 * exited already.  */
 		ret = ps_zombie;
 
-	return (ret);
+	return ret;
 }
 
 int
@@ -159,13 +159,13 @@ process_tasks(pid_t pid, pid_t **ret_tasks, size_t *ret_n)
 	struct kinfo_proc *kip = fill_kinfo(pid);
 
 	if (kip == NULL)
-		return (-1);
+		return -1;
 
 	n = kip->ki_numthreads;
 	tasks = malloc(sizeof(pid_t) * n);
 	if (tasks == NULL) {
 		free(kip);
-		return (-1);
+		return -1;
 	}
 
 	tasks[0] = kip[n - 1].ki_pid;
@@ -175,7 +175,7 @@ process_tasks(pid_t pid, pid_t **ret_tasks, size_t *ret_n)
 	free(kip);
 	*ret_tasks = tasks;
 	*ret_n = n;
-	return (0);
+	return 0;
 }
 
 /* On native 64-bit system, we need to be careful when handling cross
