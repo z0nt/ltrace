@@ -1149,37 +1149,18 @@ os_ltrace_exiting_sighandler(void)
 }
 
 size_t
-umovebytes(Process *proc, void *addr, void *laddr, size_t len) {
+umovebytes(Process *proc, void *addr, void *laddr, size_t len)
+{
+	struct ptrace_io_desc io;
 
-	union {
-		long a;
-		char c[sizeof(long)];
-	} a;
-	int started = 0;
-	size_t offset = 0, bytes_read = 0;
+	io.piod_op = PIOD_READ_I;
+	io.piod_offs = addr;
+	io.piod_addr = laddr;
+	io.piod_len = len;
 
-	while (offset < len) {
-		a.a = ptrace(PT_READ_I, proc->pid, addr + offset, 0);
-		if (a.a == -1 && errno) {
-			if (started && errno == EIO)
-				return bytes_read;
-			else
-				return -1;
-		}
-		started = 1;
+	ptrace(PT_IO, proc->pid, (caddr_t)&io, 0);
 
-		if (len - offset >= sizeof(long)) {
-			memcpy(laddr + offset, &a.c[0], sizeof(long));
-			bytes_read += sizeof(long);
-		}
-		else {
-			memcpy(laddr + offset, &a.c[0], len - offset);
-			bytes_read += (len - offset);
-		}
-		offset += sizeof(long);
-	}
-
-	return bytes_read;
+	return io.piod_len;
 }
 
 /* Read a series of bytes starting at the process's memory address
@@ -1187,26 +1168,16 @@ umovebytes(Process *proc, void *addr, void *laddr, size_t len) {
    have been read.
 */
 int
-umovestr(Process *proc, void *addr, int len, void *laddr) {
-	union {
-		long a;
-		char c[sizeof(long)];
-	} a;
-	unsigned i;
-	int offset = 0;
+umovestr(Process *proc, void *addr, int len, void *laddr)
+{
+	struct ptrace_io_desc io;
 
-	while (offset < len) {
-		a.a = ptrace(PT_READ_I, proc->pid, addr + offset, 0);
-		for (i = 0; i < sizeof(long); i++) {
-			if (a.c[i] && offset + (signed)i < len) {
-				*(char *)(laddr + offset + i) = a.c[i];
-			} else {
-				*(char *)(laddr + offset + i) = '\0';
-				return 0;
-			}
-		}
-		offset += sizeof(long);
-	}
-	*(char *)(laddr + offset) = '\0';
+	io.piod_op = PIOD_READ_I;
+	io.piod_offs = addr;
+	io.piod_addr = laddr;
+	io.piod_len = len;
+
+	ptrace(PT_IO, proc->pid, (caddr_t)&io, 0);
+
 	return 0;
 }
