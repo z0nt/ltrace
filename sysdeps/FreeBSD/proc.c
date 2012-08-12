@@ -357,9 +357,6 @@ crawl_linkmap(struct Process *proc, struct lt_r_debug_64 *dbg)
 		return;
 	}
 
-	/* FIXME: zont */
-	return;
-
 	/* XXX The double cast should be removed when
 	 * target_address_t becomes integral type.  */
 	target_address_t addr = (target_address_t)(uintptr_t)dbg->r_map;
