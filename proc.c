@@ -180,6 +180,9 @@ process_destroy(struct Process *proc)
 int
 process_exec(struct Process *proc)
 {
+	int callstack_depth;
+
+	callstack_depth = proc->callstack_depth;
 	/* Call exec first, before we destroy the main state.  */
 	if (arch_process_exec(proc) < 0)
 		return -1;
@@ -191,6 +194,7 @@ process_exec(struct Process *proc)
 		process_bare_destroy(proc, 1);
 		return -1;
 	}
+	proc->callstack_depth = callstack_depth;
 	return 0;
 }
 
