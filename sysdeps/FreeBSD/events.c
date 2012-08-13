@@ -225,6 +225,22 @@ next_event(void)
 			perror("get_instruction_pointer");
 	}
 
+	if (WIFSTOPPED(status)) {
+		struct ptrace_lwpinfo info;
+		ptrace(PT_LWPINFO, pid, (caddr_t)&info, sizeof(info));
+		if (info.pl_flags & PL_FLAG_FORKED) {
+			event.type = EVENT_CLONE;
+			event.e_un.newpid = info.pl_child_pid;
+			debug(DEBUG_EVENT, "event: FORK: pid=%d, newpid=%d",
+			      pid, info.pl_child_pid);
+			return &event;
+		}
+		if (info.pl_flags & PL_FLAG_EXEC) {
+			event.type = EVENT_EXEC;
+			debug(DEBUG_EVENT, "event: EXEC: pid=%d", pid);
+			return &event;
+		}
+	}
 	switch (syscall_p(event.proc, status, &tmp)) {
 		case 1:
 			event.type = EVENT_SYSCALL;
@@ -250,23 +266,6 @@ next_event(void)
 			CHECK_PROCESS_TERMINATED;
 			if (errno != 0)
 				perror("syscall_p");
-	}
-	/* FIXME: zont */
-	if (WIFSTOPPED(status)) {
-		struct ptrace_lwpinfo info;
-		ptrace(PT_LWPINFO, pid, (caddr_t)&info, sizeof(info));
-		if (info.pl_flags & PL_FLAG_FORKED) {
-			event.type = EVENT_CLONE;
-			event.e_un.newpid = info.pl_child_pid;
-			debug(DEBUG_EVENT, "event: CLONE: pid=%d, newpid=%d",
-			      pid, info.pl_child_pid);
-			return &event;
-		}
-		if (info.pl_flags & PL_FLAG_EXEC) {
-			event.type = EVENT_EXEC;
-			debug(DEBUG_EVENT, "event: EXEC: pid=%d", pid);
-			return &event;
-		}
 	}
 	if (!WIFSTOPPED(status)) {
 		/* should never happen */
