@@ -69,7 +69,8 @@ fill_kinfo(pid_t pid)
 
 	len = 0;
 	if (sysctl(name, 4, NULL, &len, NULL, 0) == -1) {
-		warn("sysctl: kern.proc.pid: %d", pid);
+		if (errno != ESRCH)
+			warn("sysctl: kern.proc.pid: %d", pid);
 		return NULL;
 	}
 
