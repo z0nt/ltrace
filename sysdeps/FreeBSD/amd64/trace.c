@@ -30,10 +30,15 @@ syscall_p(struct Process *proc, int status, int *sysnum)
 	struct ptrace_lwpinfo info;
 
 	if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-		*sysnum = ((proc_archdep *) proc->arch_ptr)->regs.r_rax;
+		ptrace(PT_LWPINFO, proc->pid, (caddr_t)&info, sizeof(info));
+		if (info.pl_flags & PL_FLAG_SCE)
+			*sysnum = ((proc_archdep *) proc->arch_ptr)->regs.r_rax;
+		else if (info.pl_flags & PL_FLAG_SCX)
+			*sysnum = proc->callstack[proc->callstack_depth - 1].c_un.syscall;
+		else
+			return (0);
 		debug(DEBUG_FUNCTION, "sysnum=%d %p %d\n", *sysnum,
 		    get_instruction_pointer(proc), errno);
-		ptrace(PT_LWPINFO, proc->pid, (caddr_t)&info, sizeof(info));
 		if (info.pl_flags & PL_FLAG_SCE)
 			return (1);
 		else if (info.pl_flags & PL_FLAG_SCX)
