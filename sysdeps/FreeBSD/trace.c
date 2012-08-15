@@ -323,6 +323,7 @@ process_stopping_done(struct process_stopping_handler * self, Process * leader)
 				continue_process(self->pids.tasks[i].pid);
 		continue_process(self->task_enabling_breakpoint->pid);
 		destroy_event_handler(leader);
+		return;
 	}
 
 	if (self->exiting) {
