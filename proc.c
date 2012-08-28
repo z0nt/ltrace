@@ -153,6 +153,12 @@ private_process_destroy(struct Process *proc, int keep_filename)
 
 	/* Libraries and symbols.  This is only relevant in
 	 * leader.  */
+	/*
+	 * XXX
+	 * It seems that copying of libraries is not deep enough, so let
+	 * them leak for now.
+	 */
+#if 0
 	struct library *lib;
 	for (lib = proc->libraries; lib != NULL; ) {
 		struct library *next = lib->next;
@@ -160,6 +166,7 @@ private_process_destroy(struct Process *proc, int keep_filename)
 		free(lib);
 		lib = next;
 	}
+#endif
 	proc->libraries = NULL;
 
 	/* Breakpoints.  */
