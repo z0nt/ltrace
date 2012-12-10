@@ -17,6 +17,7 @@ ___libos_la_LIBADD = \
 	libcpu.la
 
 noinst_HEADERS = \
+	arch_syscallent.h \
 	signalent.h \
 	syscallent.h \
 	signalent1.h \

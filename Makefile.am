@@ -53,6 +53,7 @@ ltrace_LDADD = \
 
 
 noinst_HEADERS = \
+	breakpoint.h \
 	common.h \
 	debug.h \
 	defs.h \
@@ -62,6 +63,7 @@ noinst_HEADERS = \
 	ltrace.h \
 	options.h \
 	output.h \
+	proc.h \
 	read_config_file.h \
 	library.h \
 	filter.h \
