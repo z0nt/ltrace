@@ -112,6 +112,8 @@ process_stopped(pid_t pid)
 
 	if (kip != NULL) {
 		if (kip->ki_stat & SSTOP)
+			is_stopped = 1;
+		else
 			is_stopped = 0;
 		free(kip);
 	}
