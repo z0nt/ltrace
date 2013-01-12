@@ -17,7 +17,8 @@
 # 02110-1301 USA
 
 DIST_SUBDIRS = \
-	linux-gnu
+	linux-gnu \
+	freebsd
 
 SUBDIRS = \
 	$(HOST_OS)
