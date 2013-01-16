@@ -33,8 +33,14 @@ get_stack_pointer(Process *proc) {
 void *
 get_return_addr(Process *proc, void *stack_pointer) {
 	unsigned long int ret;
-	ret = ptrace(PT_READ_I, proc->pid, stack_pointer, 0);
-	return (void *)ret;
+	struct ptrace_io_desc io;
+	io.piod_op = PIOD_READ_I;
+	io.piod_offs = stack_pointer;
+	io.piod_addr = &ret;
+	io.piod_len = sizeof(ret);
+	if (ptrace(PT_IO, proc->pid, (caddr_t)&io, 0) == 0)
+		return (void *)ret;
+	return (void *)-1;
 }
 
 /* XXX not used */
