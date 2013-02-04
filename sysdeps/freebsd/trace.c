@@ -130,11 +130,61 @@ have_events_for(pid_t pid)
 	return each_qd_event(event_for_pid, (void *)(uintptr_t)pid) != NULL;
 }
 
+static void
+apply_threads(pid_t pid, int suspend)
+{
+	int i, threads;
+	lwpid_t *lwpids;
+
+	threads = ptrace(PT_GETNUMLWPS, pid, 0, 0);
+	if (threads == -1) {
+		perror("PT_GETNUMLWPS");
+		exit(1);
+	}
+	if (threads == 1)
+		return;
+	lwpids = malloc(sizeof(lwpid_t) * threads);
+	if (lwpids == NULL) {
+		perror("malloc");
+		exit(1);
+	}
+	threads = ptrace(PT_GETLWPLIST, pid, (caddr_t)lwpids, threads);
+	if (threads == -1) {
+		perror("PT_GETLWPLIST");
+		exit(1);
+	}
+	for (i = 0; i < threads; i++) {
+		if (curthread->tid != lwpids[i]) {
+			if (ptrace(suspend ? PT_SUSPEND : PT_RESUME, lwpids[i],
+			    0, 0) == -1) {
+				perror("PT_SUSPEND/PT_RESUME");
+				exit(1);
+			}
+		}
+	}
+	free(lwpids);
+	curthread->onstep = suspend;
+}
+
+static void
+suspend_threads(pid_t pid)
+{
+	apply_threads(pid, 1);
+}
+
+static void
+resume_threads(pid_t pid)
+{
+	apply_threads(pid, 0);
+}
+
 void
 continue_process(pid_t pid)
 {
 	debug(DEBUG_PROCESS, "continue_process: pid=%d", pid);
 
+	if (curthread->onstep)
+		resume_threads(pid);
 	/* Only really continue the process if there are no events in
 	   the queue for this process.  Otherwise just wait for the
 	   other events to arrive.  */
@@ -588,6 +638,7 @@ singlestep(struct process_stopping_handler *self)
 				   &sw_singlestep_add_bp, &data)) {
 	case SWS_HW:
 		/* Otherwise do the default action: singlestep.  */
+		suspend_threads(proc->pid);
 		debug(1, "PT_STEP");
 		if (ptrace(PT_STEP, proc->pid, 0, 0)) {
 			perror("PT_STEP");

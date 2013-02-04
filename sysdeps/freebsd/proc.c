@@ -584,18 +584,30 @@ int
 os_process_init(struct process *proc)
 {
 	bzero(&proc->os, sizeof(proc->os));
+	SLIST_INIT(&proc->os.threads);
 	return 0;
 }
 
 void
 os_process_destroy(struct process *proc)
 {
+	struct threadinfo *td;
+
+	while (!SLIST_EMPTY(&proc->os.threads)) {
+		td = SLIST_FIRST(&proc->os.threads);
+		if (td == curthread)
+			curthread = NULL;
+		SLIST_REMOVE_HEAD(&proc->os.threads, next);
+		free(td->callstack);
+		free(td);
+	}
 }
 
 int
 os_process_clone(struct process *retp, struct process *proc)
 {
 	retp->os = proc->os;
+	SLIST_INIT(&retp->os.threads);
 	return 0;
 }
 

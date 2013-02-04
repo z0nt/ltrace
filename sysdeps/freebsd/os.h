@@ -18,17 +18,34 @@
  * 02110-1301 USA
  */
 
+#include <sys/queue.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <machine/reg.h>
 
 int is_vfork(pid_t pid1, pid_t pid2);
 
+struct threadinfo
+{
+	SLIST_ENTRY(threadinfo) next;
+	lwpid_t tid;
+	int valid_regs;
+	struct reg regs;
+	int onstep;
+	struct process *proc;
+	int saved;
+	/* from struct process */
+	size_t callstack_depth;
+	struct callstack_element *callstack;
+	struct event_handler *event_handler;
+};
+
 #define OS_HAVE_PROCESS_DATA
 struct os_process_data {
 	arch_addr_t debug_addr;
 	int debug_state;
-	int valid_regs;
-	struct reg regs;
 	struct ptrace_lwpinfo lwpinfo;
+	SLIST_HEAD(, threadinfo) threads;
 };
+
+struct threadinfo *curthread;

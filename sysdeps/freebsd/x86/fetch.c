@@ -548,12 +548,12 @@ static int
 fetch_register_banks(struct process *proc, struct fetch_context *context,
 		     int floating)
 {
-	if (ptrace(PT_GETREGS, proc->pid, (caddr_t)&context->iregs, 0) < 0)
+	if (ptrace(PT_GETREGS, curthread->tid, (caddr_t)&context->iregs, 0) < 0)
 		return -1;
 	context->ireg = 0;
 
 	if (floating) {
-		if (ptrace(PT_GETFPREGS, proc->pid,
+		if (ptrace(PT_GETFPREGS, curthread->tid,
 			   (caddr_t)&context->fpregs, 0) < 0)
 			return -1;
 		context->freg = 0;

@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 
 #include "backend.h"
@@ -34,12 +35,64 @@
 #include "proc.h"
 #include "ptrace.h"
 #include "type.h"
+#include "common.h"
 
 #ifdef __x86_64__
 static const int x86_64 = 1;
 #else
 static const int x86_64 = 0;
 #endif
+
+static struct threadinfo *
+switch_thread(struct process *proc, lwpid_t tid)
+{
+	struct threadinfo *td;
+
+	if (curthread && curthread->proc == proc) {
+		/* Do not do anything if thread the same. */
+		if (curthread->tid == tid)
+			return curthread;
+		/* Save current context. */
+		debug(0100, "save context: tid=%u, callstack_depth=%zu",
+		    curthread->tid, proc->callstack_depth);
+		curthread->callstack_depth = proc->callstack_depth;
+		memcpy(curthread->callstack, proc->callstack,
+		    sizeof(struct callstack_element) * proc->callstack_depth);
+		curthread->event_handler = proc->event_handler;
+		curthread->saved = 1;
+	}
+	/* Looking for already existed thread. */
+	SLIST_FOREACH(td, &proc->os.threads, next) {
+		if (td->tid == tid) {
+			if (td->saved == 0)
+				return td;
+			/* Load saved context. */
+			debug(0100, "load context: tid=%u, callstack_depth=%zu",
+			    td->tid, td->callstack_depth);
+			proc->callstack_depth = td->callstack_depth;
+			memcpy(proc->callstack, td->callstack,
+			    sizeof(struct callstack_element) * td->callstack_depth);
+			proc->event_handler = td->event_handler;
+			return td;
+		}
+	}
+	/* New thread. */
+	debug(0100, "new thread: tid=%u", tid);
+	td = malloc(sizeof(*td));
+	if (td == NULL) {
+		perror("malloc");
+		return curthread;
+	}
+	td->tid = tid;
+	td->onstep = 0;
+	td->proc = proc;
+	td->saved = 0;
+	td->callstack_depth = 0;
+	td->callstack = malloc(sizeof(struct callstack_element) * MAX_CALLDEPTH);
+	td->event_handler = NULL;
+	SLIST_INSERT_HEAD(&proc->os.threads, td, next);
+	return td;
+}
 
 void
 get_arch_dep(struct process *proc)
@@ -50,9 +103,9 @@ get_arch_dep(struct process *proc)
 			perror("PT_LWPINFO");
 		return;
 	}
-
-	proc->os.valid_regs = (ptrace(PT_GETREGS, proc->pid,
-	    (caddr_t)&proc->os.regs, 0) == 0);
+	curthread = switch_thread(proc, proc->os.lwpinfo.pl_lwpid);
+	curthread->valid_regs = (ptrace(PT_GETREGS, curthread->tid,
+	    (caddr_t)&curthread->regs, 0) == 0);
 
 	/* Unfortunately there are still remnants of mask_32bit uses
 	 * around.  */
@@ -81,9 +134,9 @@ syscall_p(struct process *proc, int status, int *sysnum)
 
 		if ((proc->os.lwpinfo.pl_flags & PL_FLAG_SCE) != 0) {
 #ifdef __x86_64__
-			*sysnum = proc->os.regs.r_rax;
+			*sysnum = curthread->regs.r_rax;
 #else
-			*sysnum = proc->os.regs.r_eax;
+			*sysnum = curthread->regs.r_eax;
 #endif
 		} else if ((proc->os.lwpinfo.pl_flags & PL_FLAG_SCX) != 0) {
 			if (elem != NULL && elem->is_syscall)

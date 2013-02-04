@@ -34,11 +34,11 @@
 void *
 get_instruction_pointer(struct process *proc)
 {
-	if (proc->os.valid_regs)
+	if (curthread->valid_regs)
 #ifdef __x86_64__
-		return (void *)proc->os.regs.r_rip;
+		return (void *)curthread->regs.r_rip;
 #else
-		return (void *)proc->os.regs.r_eip;
+		return (void *)curthread->regs.r_eip;
 #endif
 	return (void *)-1;
 }
@@ -46,24 +46,24 @@ get_instruction_pointer(struct process *proc)
 void
 set_instruction_pointer(struct process *proc, arch_addr_t addr)
 {
-	if (proc->os.valid_regs) {
+	if (curthread->valid_regs) {
 #ifdef __x86_64__
-		proc->os.regs.r_rip = (long)addr;
+		curthread->regs.r_rip = (long)addr;
 #else
-		proc->os.regs.r_eip = (long)addr;
+		curthread->regs.r_eip = (long)addr;
 #endif
-		ptrace(PT_SETREGS, proc->pid, (caddr_t)&proc->os.regs, 0);
+		ptrace(PT_SETREGS, curthread->tid, (caddr_t)&curthread->regs, 0);
 	}
 }
 
 void *
 get_stack_pointer(struct process *proc)
 {
-	if (proc->os.valid_regs)
+	if (curthread->valid_regs)
 #ifdef __x86_64__
-		return (void *)proc->os.regs.r_rsp;
+		return (void *)curthread->regs.r_rsp;
 #else
-		return (void *)proc->os.regs.r_esp;
+		return (void *)curthread->regs.r_esp;
 #endif
 	return (void *)-1;
 }
